@@ -6,14 +6,14 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/27 12:41:50 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/16 12:48:19 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/22 20:01:39 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CODEXION_H
 # define CODEXION_H
 
-# include <threads.h>
+# include <pthread.h>
 # include <stddef.h>
 # include <stdlib.h>
 # include <unistd.h>
@@ -21,6 +21,12 @@
 //# include "./ft_printf/ft_printf.h"
 
 /*Structs*/
+
+typedef enum e_scheduler
+{
+	FIFO,
+	EDF
+}	t_scheduler;
 
 typedef struct s_data
 {
@@ -31,15 +37,17 @@ typedef struct s_data
 	long			time_to_refactor;
 	unsigned int	number_of_compiles_required;
 	long			dongle_cooldown;
-	char			*scheduler;
+	t_scheduler		scheduler;
 
 }	t_data;
 
+typedef struct s_simulation t_simulation;
 
 typedef struct s_dongle
 {
-	pthread_mutex_t	*mutex;
-	pthread_cond_t	*cond_var;
+	int				dongle_id;
+	pthread_mutex_t	dongle_mutex;
+	pthread_cond_t	dongle_cond;
 }	t_dongle;
 
 
@@ -47,16 +55,25 @@ typedef struct s_dongle
 
 typedef struct s_coder
 {
-	pthread_t	*thread;
-	t_dongle	*left_dungle;
+	int			coder_id;
+	pthread_t	thread;
+	t_dongle	*left_dongle;
 	t_dongle	*right_dongle;
+	pthread_mutex_t	coder_mutex;
+	int			compile_number;
+	long		last_compile;
+	t_simulation	*simulation;
 }	t_coder;
 
 typedef struct s_simulation
 {
-	t_data		t_data;
-	t_coder		t_coder;
-	t_dongle	t_dongle;
+	pthread_t	monitor_thread;
+	int			end_simulation;
+	pthread_mutex_t	end_mutex;
+	long		initial_time;
+	t_data		data;
+	t_coder		*coders;
+	t_dongle	*dongles;
 }	t_simulation;
 
 
