@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/11/23 12:54:26 by xlopez-g          #+#    #+#             */
+/*   Updated: 2026/11/23 13:33:56 by xlopez-g         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 
 #include "codexion.h"
 
@@ -52,7 +64,7 @@ int	parser(t_data data)
 	int	n_coders;
 
 	n_coders = data.number_of_coders;
-	nbr = data.number_of_compiles_required;
+	nbr = data.compiles_required;
 	if (n_coders == 1)
 		printf("Error: Only one coder");
 	else if (n_coders < 1)
@@ -79,7 +91,7 @@ t_data	organizer(int argc, char **argv)
 	data.time_to_compile = ft_atol(argv[3]);
 	data.time_to_debug = ft_atol(argv[4]);
 	data.time_to_refactor = ft_atol(argv[5]);
-	data.number_of_compiles_required = ft_atoi(argv[6]);
+	data.compiles_required = ft_atoi(argv[6]);
 	data.dongle_cooldown = ft_atoi(argv[7]);
 	data.scheduler = argv[8];
 	return (data);
@@ -92,20 +104,27 @@ void	printf_organizer(t_data data)
 	printf("\n%ld", data.time_to_compile);
 	printf("\n%ld", data.time_to_debug);
 	printf("\n%ld", data.time_to_refactor);
-	printf("\n%d", data.number_of_compiles_required);
+	printf("\n%d", data.compiles_required);
 	printf("\n%ld", data.dongle_cooldown);
-	printf("\n%s", data.scheduler);
+	printf("\n%s\n", data.scheduler);
 }
 
 int	main(int argc, char **argv)
 {
 	t_data	data;
+    t_simulation    *simulation;
 
 	if (general_parser(argc, argv) == 0)
 		return (0);
 	data = organizer(argc, argv);
 	if (parser(data) == 0)
 		return (0);
-	printf_organizer(data);
+    simulation = malloc(sizeof(t_simulation));
+    if (simulation == NULL)
+        return (1);
+    simulation->data = data;
+    printf_organizer(simulation->data);
+    if (create_simulation(simulation) != 0)
+		return (1);
 	return (0);
 }
