@@ -6,7 +6,7 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/16 12:03:20 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/23 16:14:24 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/23 19:44:52 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,17 +38,17 @@ int	create_dongles(t_simulation *simulation)
 
 int	take_left_dongle(t_coder *coder)
 {
-	pthread_mutex_t	dongle_mutex;
 
-	dongle_mutex = coder->left_dongle->dongle_mutex;
-	pthread_mutex_lock(&dongle_mutex);
+	pthread_mutex_lock(&coder->left_dongle->dongle_mutex);
 	printf("%d has taken a dongle id %d\n", coder->coder_id, coder->left_dongle->dongle_id);
-	//pthread_mutex_unlock(&dongle_mutex);
+	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
 	return (0);
 }
 
 int	take_right_dongle(t_coder *coder)
 {
+	pthread_mutex_lock(&coder->right_dongle->dongle_mutex);
+
 	printf("%d has taken a dongle id %d\n", coder->coder_id, coder->right_dongle->dongle_id);
 	return (0);
 
@@ -78,8 +78,14 @@ int	compile(t_coder *coder)
 {
 	printf("%d is compiling\n", coder->coder_id);
 	return(0);
-}
+	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
 
+}
+int	release_dongles(t_coder *coder)
+{
+    pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
+    pthread_mutex_unlock(&coder->right_dongle->dongle_mutex);
+}
 
 void	*coder_routine(void *in_coder)
 {
@@ -97,21 +103,19 @@ void	*coder_routine(void *in_coder)
 		//coder->compile_number++;
 		//debug(coder);
 		//refactor(coder);
+		release_dongles(coder);
 	}
 }
 
 int	initialize_coder(t_coder *coder)
 {
-	pthread_mutex_t	coder_mutex;
-	pthread_t		coder_thread;
-	int				i;	
+	int	i;	
 
-	coder->coder_mutex = coder_mutex;
-	coder->thread = coder_thread;
-	pthread_mutex_init(&coder_mutex, NULL);
+	if(pthread_mutex_init(&coder->coder_mutex, NULL) != 0)
+		return(1);
 
-	pthread_create(&coder_thread, NULL, (void *)coder_routine, (void *)coder);
-
+	if(pthread_create(&coder->thread, NULL, (void *)coder_routine, (void *)coder) != 0)
+		return(1);
 	return (0);
 }
 
@@ -154,6 +158,7 @@ int	create_coders(t_simulation *simulation)
 	{
 		pthread_join(simulation->coders[i].thread, NULL);
 		pthread_mutex_destroy(&simulation->coders[i].coder_mutex);
+		i++;
 	}
 	return (0);
 }
