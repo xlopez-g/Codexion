@@ -6,7 +6,7 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/16 12:03:20 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/23 19:44:52 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/24 09:56:27 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,6 @@ int	take_left_dongle(t_coder *coder)
 
 	pthread_mutex_lock(&coder->left_dongle->dongle_mutex);
 	printf("%d has taken a dongle id %d\n", coder->coder_id, coder->left_dongle->dongle_id);
-	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
 	return (0);
 }
 
@@ -58,16 +57,16 @@ int	take_dongles(t_coder *coder)
 {
 	if ((coder->coder_id - 1) % 2 == 0)
 	{
-		sleep(1);
+		//sleep(1);
 		take_right_dongle(coder);
-		sleep(1);
+		//sleep(1);
 		take_left_dongle(coder);
 	}
 	else
 	{
-		sleep(1);
+		//sleep(1);
 		take_left_dongle(coder);
-		sleep(1);
+		//sleep(1);
 		take_right_dongle(coder);
 	}
 
