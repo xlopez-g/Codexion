@@ -6,7 +6,7 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/16 12:03:20 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/25 14:38:48 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/27 11:52:59 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ int	create_dongles(t_simulation *simulation)
 	while (i < number_of_coders)
 	{
 		dongles[i].dongle_id = i;
-		dongles[i].available = 1;
+		dongles[i].available = 0;
 		dongles[i].last_release = 0;
 		i++;
 	}
@@ -38,17 +38,23 @@ int	create_dongles(t_simulation *simulation)
 
 int	take_left_dongle(t_coder *coder)
 {
-
-	pthread_mutex_lock(&coder->left_dongle->dongle_mutex);
-	printf("%d has taken a dongle id %d\n", coder->coder_id, coder->left_dongle->dongle_id);
-	return (0);
+	if (coder->left_dongle->available == 0)
+	{
+		pthread_mutex_lock(&coder->left_dongle->dongle_mutex);
+		coder->left_dongle->available = 1;
+		printf("%d has taken a dongle id %d\n", coder->coder_id, coder->left_dongle->dongle_id);
+	}
+		return (0);
 }
 
 int	take_right_dongle(t_coder *coder)
 {
-	pthread_mutex_lock(&coder->right_dongle->dongle_mutex);
-
-	printf("%d has taken a dongle id %d\n", coder->coder_id, coder->right_dongle->dongle_id);
+	if (coder->right_dongle->available == 0)
+	{
+		pthread_mutex_lock(&coder->right_dongle->dongle_mutex);
+		coder->right_dongle->available = 1;
+		printf("%d has taken a dongle id %d\n", coder->coder_id, coder->right_dongle->dongle_id);
+	}
 	return (0);
 
 }
@@ -80,10 +86,28 @@ int	compile(t_coder *coder)
 	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
 
 }
+
+int	debug(t_coder *coder)
+{
+	printf("%d is debugging\n", coder->coder_id);
+	return(0);
+	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
+
+}
+
+int	refactor(t_coder *coder)
+{
+	printf("%d is refactorizing\n", coder->coder_id);
+	return(0);
+	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
+
+}
 int	release_dongles(t_coder *coder)
 {
-    pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
-    pthread_mutex_unlock(&coder->right_dongle->dongle_mutex);
+	coder->left_dongle->available = 0;
+	coder->right_dongle->available = 0;
+	pthread_mutex_unlock(&coder->left_dongle->dongle_mutex);
+	pthread_mutex_unlock(&coder->right_dongle->dongle_mutex);
 }
 
 void	*coder_routine(void *in_coder)
@@ -93,10 +117,11 @@ void	*coder_routine(void *in_coder)
 
 	coder = (t_coder *)in_coder;
 	compiles_required = coder->simulation->data.compiles_required;
-	if (coder->compile_number != compiles_required)
+	if (coder->simulation->end_simulation == 1)
+		pthread_cond_broadcast(&coder->simulation->monitor_cond);
+	while (coder->compile_number != compiles_required)
 	{
 		take_dongles(coder);
-		
 		compile(coder);
 		sleep(1);
 		//coder->compile_number++;
@@ -104,11 +129,13 @@ void	*coder_routine(void *in_coder)
 		//refactor(coder);
 		release_dongles(coder);
 	}
-	else
-	{
-		coder->simulation->end_simulation = 1;		
+	if (coder->simulation->end_simulation == 1)
 		pthread_cond_broadcast(&coder->simulation->monitor_cond);
-	}
+	debug(coder);
+	
+	if (coder->simulation->end_simulation == 1)
+		pthread_cond_broadcast(&coder->simulation->monitor_cond);
+	refactor(coder);
 }
 
 int	initialize_coder(t_coder *coder)
@@ -188,23 +215,19 @@ void	*monitor_routine(void *in_data)
 int    create_simulation(t_simulation *simulation)
 {
 	pthread_t       monitor_thread;
-	pthread_mutex_t end_mutex;
-	pthread_cond_t	monitor_cond;
 	int				res;
 
 	simulation->end_simulation = 0;
-	simulation->end_mutex = end_mutex;
-	simulation->monitor_cond = monitor_cond;
-	pthread_mutex_init(&end_mutex, NULL);
-	pthread_cond_init(&monitor_cond, NULL);
+	pthread_mutex_init(&simulation->end_mutex, NULL);
+	pthread_cond_init(&simulation->monitor_cond, NULL);
 	pthread_create(&monitor_thread, NULL, monitor_routine, (void *)simulation);
 	create_dongles(simulation);
 
 	res = create_coders(simulation);
 	printf("res: %d\n", res);
 	pthread_join(monitor_thread, NULL);
-	pthread_cond_destroy(&monitor_cond);
-	pthread_mutex_destroy(&end_mutex);
+	pthread_cond_destroy(&simulation->monitor_cond);
+	pthread_mutex_destroy(&simulation->end_mutex);
 	printf("d\n");
 	return (0);
 }
