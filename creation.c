@@ -6,7 +6,7 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/16 12:03:20 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/24 09:56:27 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/25 14:38:48 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,6 +104,11 @@ void	*coder_routine(void *in_coder)
 		//refactor(coder);
 		release_dongles(coder);
 	}
+	else
+	{
+		coder->simulation->end_simulation = 1;		
+		pthread_cond_broadcast(&coder->simulation->monitor_cond);
+	}
 }
 
 int	initialize_coder(t_coder *coder)
@@ -167,32 +172,38 @@ void	*monitor_routine(void *in_data)
 	t_simulation	*simulation;
 
 	simulation = (t_simulation *)in_data;
+	pthread_mutex_lock(&simulation->end_mutex);
 	while (simulation->end_simulation == 0)
 	{
-		pthread_mutex_lock(&simulation->end_mutex);
+		pthread_cond_wait(&simulation->monitor_cond, &simulation->end_mutex);
 		printf("b\n");
 		sleep(5);
 		//simulation->end_simulation++;
-		pthread_mutex_unlock(&simulation->end_mutex);
 	}
-
+	printf("end!");
+	pthread_mutex_unlock(&simulation->end_mutex);
+	
 }
 
 int    create_simulation(t_simulation *simulation)
 {
 	pthread_t       monitor_thread;
 	pthread_mutex_t end_mutex;
+	pthread_cond_t	monitor_cond;
 	int				res;
 
 	simulation->end_simulation = 0;
 	simulation->end_mutex = end_mutex;
+	simulation->monitor_cond = monitor_cond;
 	pthread_mutex_init(&end_mutex, NULL);
+	pthread_cond_init(&monitor_cond, NULL);
 	pthread_create(&monitor_thread, NULL, monitor_routine, (void *)simulation);
 	create_dongles(simulation);
 
 	res = create_coders(simulation);
 	printf("res: %d\n", res);
 	pthread_join(monitor_thread, NULL);
+	pthread_cond_destroy(&monitor_cond);
 	pthread_mutex_destroy(&end_mutex);
 	printf("d\n");
 	return (0);

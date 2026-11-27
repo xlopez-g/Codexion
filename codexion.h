@@ -6,7 +6,7 @@
 /*   By: xlopez-g <xlopez-g@student.42urduliz.com>  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/27 12:41:50 by xlopez-g          #+#    #+#             */
-/*   Updated: 2026/11/23 12:53:20 by xlopez-g         ###   ########.fr       */
+/*   Updated: 2026/11/25 13:12:17 by xlopez-g         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,6 +73,7 @@ typedef struct s_simulation
 	pthread_t	    monitor_thread;
 	int             end_simulation;
 	pthread_mutex_t	end_mutex;
+	pthread_cond_t	monitor_cond;
 	long		    initial_time;
 	t_data          data;
 	t_coder         *coders;
